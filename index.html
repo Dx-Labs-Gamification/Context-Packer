@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Context Packer: Side Quest</title>
+<title>Context Packer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -82,20 +82,24 @@ canvas{display:block;width:100%;height:auto;image-rendering:pixelated;background
 .dpad .u{grid-column:2;grid-row:1}.dpad .l{grid-column:1;grid-row:2}.dpad .d{grid-column:2;grid-row:2}.dpad .r{grid-column:3;grid-row:2}
 @media (pointer:coarse){.dpad{display:grid}}
 .task{background:#08110b;border:3px solid var(--line);padding:12px 14px;margin-bottom:12px}
-.task .tl{font-family:var(--pix);font-size:.55rem;color:var(--muted)}
+.task .tl{font-family:var(--pix);font-size:.5rem;color:var(--muted);line-height:1.7}
 .task .tn{display:block;font-weight:700;font-size:1.05rem;margin:6px 0 10px}
 .need{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
-.need li{font-size:.88rem;border:2px dashed var(--ok);padding:4px 10px;color:var(--ok)}
+.need li{font-size:.85rem;border:2px dashed var(--line);padding:4px 10px;color:var(--muted)}
 .need li::before{content:"\25A1  "}
-.need li.got{border-style:solid;background:#1d3a25;color:var(--cream)}
+.need li.got{border-style:solid;border-color:var(--ok);background:#1d3a25;color:var(--cream)}
 .need li.got::before{content:"\2713  "}
-.steps{margin:0 0 18px;padding:0;list-style:none;display:grid;gap:12px}
+.steps{margin:0 0 16px;padding:0;list-style:none;display:grid;gap:12px}
 .steps li{border-left:4px solid var(--line);padding-left:12px;font-size:.92rem;color:var(--muted)}
 .steps li.g{border-left-color:var(--ok)} .steps li.r{border-left-color:var(--bad)}
 .steps b{display:block;color:var(--cream)}
+label.chk{display:flex;gap:10px;align-items:center;text-transform:none;letter-spacing:0;font-size:.85rem;color:var(--muted);margin:0 0 16px}
+.chk input{width:20px;height:20px;accent-color:#e5c76b}
 .stage{position:relative}
+.fbline{min-height:4.2em;margin-top:10px;padding:8px 12px;border-left:6px solid var(--line);background:var(--btn);font-size:.88rem;color:var(--muted)}
+.fbline.ok{border-left-color:var(--ok);color:var(--cream)} .fbline.bad{border-left-color:var(--bad);color:var(--cream)}
 .lesson{position:absolute;inset:0;background:rgba(8,17,11,.96);border:3px solid var(--gold);display:flex;flex-direction:column;justify-content:center;gap:10px;padding:18px}
-.lesson .ltag{font-family:var(--pix);font-size:.55rem;color:var(--ok)}
+.lesson .ltag{font-family:var(--pix);font-size:.5rem;color:var(--ok);line-height:1.7}
 .lesson h3{font-family:var(--pix);font-weight:400;font-size:.85rem;line-height:1.6;margin:0;color:var(--gold);text-transform:uppercase}
 .lesson p{margin:0 0 6px;font-size:.95rem}
 .recap{margin:0;padding-left:20px;display:grid;gap:10px;font-size:.9rem;color:var(--muted)}
@@ -116,7 +120,7 @@ let player="", cleanup=null;
 const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e};
 const shuffle=a=>{a=a.slice();for(let n=a.length-1;n>0;n--){const j=Math.floor(Math.random()*(n+1));[a[n],a[j]]=[a[j],a[n]]}return a};
 const txt=(t,c,s)=>{const e=el(t,c);e.textContent=s;return e};
-function panel(tag,title){const p=el("section","panel");p.append(txt("span","tag",tag),txt("h2","",title));return p}
+function panel(tag,title){const p=el("section","panel");if(tag)p.append(txt("span","tag",tag));p.append(txt("h2","",title));return p}
 function go(fn){if(cleanup){cleanup();cleanup=null}app.innerHTML="";fn();window.scrollTo(0,0)}
 function hud(right){
   const d=el("div","top"), w=txt("span","who",player);
@@ -232,9 +236,9 @@ const Music=(()=>{
 /* ===== SCREENS ===== */
 function home(){
   go(()=>{
-    app.append(txt("p","kick","OPTIONAL"),el("h1","","Context <em>Packer</em>"),
-      txt("p","lead","Your AI agent has a job to do. Catch the green cards it needs and dodge the junk. A 90-second optional side quest, just for fun and not part of the program."));
-    const p=panel("Session","Enter your name");
+    app.append(txt("p","kick","START"),el("h1","","Context <em>Packer</em>"),
+      txt("p","lead","Your AI agent has a job to do. Use what you learned in this workshop to pack the right context."));
+    const p=panel("","Enter your name");
     p.append(txt("p","hint","Your name appears on the Hall of Fame so everyone can see it."));
     const f=el("form");
     f.innerHTML='<label for="nm">Player name</label><input id="nm" type="text" maxlength="20" autocomplete="nickname" placeholder="e.g. codebreaker99"><p class="err" id="err" role="alert"></p>';
@@ -250,40 +254,64 @@ function home(){
   });
 }
 
-/* ----- Context Packer (easy version) ----- */
+/* ----- Context Packer: apply what you learned ----- */
+/* Each task comes from a module or game in the workshop. good = what the task needs, bad = tempting wrong picks. [text, why] */
 const TASKS=[
- {t:"Write a travel order",need:["Traveler name","Travel dates","Travel order form"]},
- {t:"Reply to a student email",need:["Student's email","Enrollment schedule","Reply template"]},
- {t:"Book a meeting room",need:["Date and time","Number of people","Room booking form"]},
- {t:"Summarize weekly attendance",need:["Attendance sheet","Staff list","Summary format"]},
- {t:"Process a leave request",need:["Leave form","Leave policy","Supervisor name"]},
- {t:"Post an event bulletin",need:["Event details","Event poster","Bulletin template"]},
- {t:"Write staff meeting minutes",need:["Meeting notes","Attendee list","Minutes template"]},
- {t:"Order new laptops",need:["Purchase form","Approved budget","Supplier quote"]}
+ {mod:"Module 4",t:"Clean a messy sales CSV",
+  good:[["pd.read_csv","Loads the CSV into a pandas table."],["drop_duplicates","Removes repeated rows."],["fillna (median)","Fills gaps without losing rows."]],
+  bad:[["Delete the file","Cleaning repairs data. Deleting it loses everything."],["DROP TABLE sales","That is SQL for a database, not a pandas step."],["Ignore missing values","Missing values distort averages and models."],["Pitch deck","That has nothing to do with cleaning data."]],
+  lesson:["Clean before you analyze","Duplicates and missing values distort results. Fix them first, and fill gaps instead of throwing rows away."]},
+ {mod:"Module 4",t:"Flatten nested JSON from an API",
+  good:[["pd.json_normalize","Flattens nested JSON into columns."],["Check column names","Names like address.city should read clearly."],["Save as CSV","A flat table is easy to share and reload."]],
+  bad:[["Copy by hand","Slow and full of mistakes."],["np.flatten_json","That function does not exist."],["Ignore nested fields","You would lose the inner data."],["GRANT SELECT","That is a database permission, not a data step."]],
+  lesson:["Flatten nested data","APIs return JSON with objects inside objects. json_normalize turns it into a flat table you can analyze."]},
+ {mod:"Module 4",t:"Prepare data to train a model",
+  good:[["Clean missing values","Models cannot learn from gaps."],["StandardScaler","Puts features on the same scale."],["Train/test split","Keeps unseen data to test the model."]],
+  bad:[["Train on all the data","Then nothing is left to test on."],["Delete half the rows","That throws away useful data."],["Skip scaling","Different scales can throw a model off."],["Dark mode","Nice, but it does not help the model."]],
+  lesson:["Prepare data for models","Clean the data, scale features with StandardScaler, and keep a test set the model has not seen."]},
+ {mod:"Module 5",t:"Set up the customer database",
+  good:[["CREATE TABLE","Builds the structure first."],["PRIMARY KEY","Gives every row a unique ID."],["COPY the CSV","Bulk-loads the file into the table."]],
+  bad:[["MAKE FILE","That is not a SQL command."],["No unique ID","Every row needs a unique ID."],["SELECT first","There is nothing to select until data is loaded."],["Share the admin login","Never share logins."]],
+  lesson:["Structure comes first","A table with a primary key gives every row a unique ID. Create the structure, then load the data."]},
+ {mod:"Module 5",t:"Link orders to customers",
+  good:[["customer_id column","Orders need a field that points to a customer."],["FOREIGN KEY","Enforces the link between the tables."],["REFERENCES customers","Says which table the key points to."]],
+  bad:[["Copy customer names","Copies drift out of date. Use a link instead."],["A second password","Passwords do not link tables."],["DROP TABLE customers","That deletes the table you want to link to."]],
+  lesson:["Link tables with keys","A foreign key keeps orders tied to real customers, so data stays consistent without copying it."]},
+ {mod:"Module 5",t:"Give an analyst read-only access",
+  good:[["Create a role","Roles group permissions for a type of user."],["GRANT SELECT","Read-only access, nothing more."],["Strong password","Protects the account from guessing."]],
+  bad:[["GRANT ALL PRIVILEGES","Too much access. Analysts only need to read."],["Share the admin login","Shared logins hide who did what."],["Sticky-note password","Never leave passwords where others can see them."]],
+  lesson:["Least privilege","Give people only the access they need. A read-only role with SELECT lets analysts view data without changing it."]},
+ {mod:"Module 5",t:"Let the web app edit a customer",
+  good:[["PATCH /customers/7","PATCH is the HTTP verb for editing a record."],["UPDATE ... WHERE id=7","Changes only the row you target."],["Use parameters","Keeps user input from being run as SQL."]],
+  bad:[["UPDATE with no WHERE","That would change every customer."],["DELETE FROM customers","That removes data instead of editing it."],["Join SQL as text","Invites SQL injection. Use parameters."]],
+  lesson:["Safe CRUD in a web app","PATCH maps to UPDATE with a WHERE clause. Use parameters, not joined text, to prevent SQL injection."]},
+ {mod:"Module 6",t:"Test a startup idea",
+  good:[["Interview 10 users","Learn if the problem is real."],["Build a simple MVP","The simplest version that solves the core problem."],["Track real users","Real usage is proof investors trust."]],
+  bad:[["Build every feature first","Costly and untested."],["Ask only friends","Friends are not your market."],["Guess the demand","Evidence beats guessing."]],
+  lesson:["Validate before you build","Talk to real users and ship a simple MVP first. Evidence of real demand beats guesses."]},
+ {mod:"AI skills",t:"Check an AI's work before it goes in",
+  good:[["Compare to the source","The document is the truth, not the AI."],["Fix misread fields","Correct the wrong number, date, or name."],["Flag guessed reads","If the AI guessed, a human must decide."]],
+  bad:[["Approve everything fast","Rubber-stamping lets bad data in."],["Trust a confident AI","A confident AI can still be wrong."],["Skip blurry documents","Those need a human, so flag them."]],
+  lesson:["Humans check AI","An AI can be confident and still wrong. Compare against the source, fix misreads, and flag guesses."]}
 ];
-const JUNK=["Cat meme","Lunch menu","Random tweet","Spam email","Old group chat","Movie trailer","Birthday GIF","Shopping cart","Horoscope","Weather in Paris"];
-const LESSONS=[
- ["Context is what the AI can see","An AI only knows what you put in front of it: your instructions, files, and earlier messages. If something is missing, it guesses."],
- ["Less is more","Extra or irrelevant information makes an AI slower and more likely to make mistakes. Give it only what the task needs."],
- ["Use current information","Old templates and outdated schedules give outdated answers. Check that every file is the latest version before sharing it."],
- ["Protect private data","Passwords, personal records, and confidential files do not belong in an AI's context. Share only what the task requires."],
- ["Good context has parts","A strong setup includes the task, the right data, a template or format, and the rules to follow. This is called context engineering."]
-];
-const W=480,H=520,AY=H-64,TIME=90,GOAL=5; /* 5 tasks x 10 XP = 50 XP maximum */
+const W=480,H=520,AY=H-64,TIME=120,GOAL=5; /* 5 tasks x 10 XP = 50 XP maximum */
 const pick=a=>a[Math.floor(Math.random()*a.length)];
+let hints=false;
 
 function intro(){
   go(()=>{
     app.append(hud(""));
     const p=panel("How to play","Pack the context");
-    p.append(txt("p","hint","Context is the information you give an AI so it can do a job well. With too little, it guesses. With too much, it gets confused. Here is how the game works."));
+    p.append(txt("p","hint","Context is the information you give an AI so it can do a job well. Every task here comes from something you practiced in this workshop, so use what you learned."));
     const ul=el("ul","steps");
     [["","1. Move the agent","Drag with your mouse or finger, or use the left and right arrow keys."],
-     ["g","2. Catch the green cards","They match the checklist above the game. Collect all three to finish the task."],
-     ["r","3. Dodge the dark cards","They are junk. Catching one costs you 2 XP."]].forEach(([c,h,s])=>{
+     ["g","2. Catch the 3 right cards","Each task needs 3 things. Think about what you learned in that module."],
+     ["r","3. Skip the wrong cards","A wrong card costs 2 XP, and a note tells you why it was wrong."]].forEach(([c,h,s])=>{
       const li=el("li",c);li.append(txt("b","",h),txt("span","",s));ul.append(li);
     });
-    p.append(ul,txt("p","hint","Finish "+GOAL+" tasks within "+TIME+" seconds. Each task is worth 10 XP, so 50 XP is the top score."));
+    const hl=el("label","chk"), cb=el("input"); cb.type="checkbox"; cb.checked=hints; cb.onchange=()=>{hints=cb.checked};
+    hl.append(cb,document.createTextNode("Show hints (the right cards glow green)"));
+    p.append(ul,hl,txt("p","hint","Finish "+GOAL+" tasks within "+TIME+" seconds. Each task is worth 10 XP, so 50 XP is the top score."));
     const b=el("button","btn gold","Start the run"); b.onclick=play; p.append(b); app.append(p); b.focus();
   });
 }
@@ -296,60 +324,63 @@ function play(){
     const tb=el("span","","Time: "); tb.append(tEl); const db=el("span","","Tasks done: "); db.append(dEl); stats.append(tb,db);
     const task=el("div","task"), tl=txt("span","tl",""), tn=txt("span","tn",""), ul=el("ul","need"); task.append(tl,tn,ul);
     const stage=el("div","stage"), cv=el("canvas"); cv.width=W; cv.height=H; stage.append(cv);
-    cv.setAttribute("aria-label","Game area: move the agent to catch the green cards");
-    p.append(stats,task,stage); app.append(p);
+    cv.setAttribute("aria-label","Game area: move the agent to catch the right context cards");
+    const fb=el("div","fbline","Catch the 3 cards this task needs."); fb.setAttribute("aria-live","polite");
+    p.append(stats,task,stage,fb); app.append(p);
     const g=cv.getContext("2d");
 
-    let lessonOpen=false,lessons=0,score=0,done=0,good=0,junk=0,timeLeft=TIME,ready=3,trans=0,over=false,spawnT=0.4,mood=0,moodT=0,banner=0,lastCount=4;
-    let order=[],cur=null,got=new Set();
-    const items=[],pops=[],stars=[],ag={x:W/2,tx:W/2,w:120};
+    let lessonOpen=false,score=0,done=0,good=0,wrong=0,timeLeft=TIME,ready=3,over=false,spawnT=0.4,mood=0,moodT=0,lastCount=4;
+    let order=shuffle(TASKS).slice(0,GOAL),cur=null,got=new Set();
+    const learned=[],items=[],pops=[],stars=[],ag={x:W/2,tx:W/2,w:120};
     for(let i=0;i<30;i++)stars.push({x:Math.random()*W,y:Math.random()*H,v:15+Math.random()*40});
 
     function render(){
-      tl.textContent="TASK "+Math.min(done+1,GOAL)+" OF "+GOAL; tn.textContent=cur.t; ul.innerHTML="";
-      cur.need.forEach(n=>ul.append(txt("li",got.has(n)?"got":"",n)));
+      tl.textContent="TASK "+Math.min(done+1,GOAL)+" OF "+GOAL+"  ·  "+cur.mod.toUpperCase();
+      tn.textContent=cur.t; ul.innerHTML="";
+      cur.good.forEach(([s])=>ul.append(txt("li",got.has(s)?"got":"",got.has(s)?s:"?")));
     }
-    function nextTask(){
-      if(!order.length)order=shuffle(TASKS);
-      cur=order.pop(); got=new Set(); items.length=0; render();
-    }
+    function nextTask(){cur=order.shift();got=new Set();items.length=0;fb.className="fbline";fb.textContent="Catch the 3 cards this task needs.";render()}
+    function say(ok,text){fb.className="fbline "+(ok?"ok":"bad");fb.textContent=text}
     function pop(x,y,s,c){pops.push({x,y,s,c,t:1})}
     function spawn(){
       if(items.length>=5)return;
-      const missing=cur.need.filter(n=>!got.has(n)&&!items.some(i=>i.s===n));
+      const missing=cur.good.filter(([s])=>!got.has(s)&&!items.some(i=>i.s===s));
       const needNow=missing.length&&(Math.random()<0.55||!items.some(i=>i.need));
-      const s=needNow?pick(missing):pick(JUNK);
+      const [s,why]=needNow?pick(missing):pick(cur.bad);
+      if(items.some(i=>i.s===s))return;
       g.font="bold 15px 'Space Mono', monospace";
       const w=Math.min(W-20,g.measureText(s).width+28), h=34;
       let x=10+Math.random()*(W-w-20);
       for(let k=0;k<8&&items.some(i=>i.y<60&&Math.abs(i.x-x)<i.w);k++)x=10+Math.random()*(W-w-20);
-      items.push({x,y:-h,w,h,s,need:!!needNow,vy:85+Math.min(done,6)*5});
+      items.push({x,y:-h,w,h,s,why,need:!!needNow,vy:80+Math.min(done,6)*5});
     }
     function grab(it){
       const cx=it.x+it.w/2;
       if(it.need){
         got.add(it.s);good++;score+=3;mood=1;moodT=0.4;pop(cx,AY-24,"+3","#7bd88f");Music.sfx(true);render();
-        if(cur.need.every(n=>got.has(n))){
-          done++;score+=1;items.length=0;Music.sfx(true);task.querySelectorAll("li").forEach(l=>l.className="got");showLesson();
+        say(true,"Right: "+it.s+". "+it.why);
+        if(cur.good.every(([s])=>got.has(s))){
+          done++;score+=1;items.length=0;Music.sfx(true);learned.push(cur);showLesson();
         }
       }else{
-        junk++;score=Math.max(0,score-2);mood=2;moodT=0.5;pop(cx,AY-24,"-2","#e57373");Music.sfx(false);
+        wrong++;score=Math.max(0,score-2);mood=2;moodT=0.5;pop(cx,AY-24,"-2","#e57373");Music.sfx(false);
+        say(false,"Not this one: "+it.s+". "+it.why);
       }
     }
     function showLesson(){
-      hudUpdate();lessons=done;lessonOpen=true;
-      const L=LESSONS[done-1], o=el("div","lesson");
+      hudUpdate();lessonOpen=true;
+      const o=el("div","lesson"), L=cur.lesson;
       const b=el("button","btn gold",done>=GOAL?"See my results":"Next task");
       b.onclick=()=>{o.remove();lessonOpen=false;if(done>=GOAL)end();else nextTask()};
-      o.append(txt("span","ltag","TASK DONE. +1 BONUS XP"),txt("h3","",L[0]),txt("p","",L[1]),b);
+      o.append(txt("span","ltag","TASK DONE. +1 BONUS XP. FROM "+cur.mod.toUpperCase()),txt("h3","",L[0]),txt("p","",L[1]),b);
       stage.append(o);b.focus();
     }
     function end(){
       if(over)return;over=true;cleanup();cleanup=null;
-      finish("contextpacker",score,done,done+" of "+GOAL+" tasks finished, "+good+" items packed, "+junk+" junk caught.",intro);
-      if(lessons){
-        const rp=panel("Recap","What you learned"), ol=el("ol","recap");
-        LESSONS.slice(0,lessons).forEach(l=>{const li=el("li");li.append(txt("b","",l[0]+". "),txt("span","",l[1]));ol.append(li)});
+      finish("contextpacker",score,done,done+" of "+GOAL+" tasks packed, "+good+" right cards, "+wrong+" wrong picks.",intro);
+      if(learned.length){
+        const rp=panel("Recap","What you applied"), ol=el("ol","recap");
+        learned.forEach(c=>{const li=el("li");li.append(txt("b","",c.t+" ("+c.mod+"): "),txt("span","",c.lesson[1]));ol.append(li)});
         rp.append(ol);app.insertBefore(rp,app.lastElementChild);
       }
     }
@@ -362,7 +393,7 @@ function play(){
     }
     const keys={};
     function update(dt){
-      if(moodT>0)moodT-=dt; if(banner>0)banner-=dt;
+      if(moodT>0)moodT-=dt;
       for(let i=pops.length-1;i>=0;i--){const o=pops[i];o.t-=dt*0.9;o.y-=34*dt;if(o.t<=0)pops.splice(i,1)}
       for(const s of stars){s.y+=s.v*dt;if(s.y>H){s.y=0;s.x=Math.random()*W}}
       const kx=(keys.r?1:0)-(keys.l?1:0);
@@ -375,11 +406,10 @@ function play(){
         if(c!==lastCount&&c>0){lastCount=c;Music.sfx(true)}
         return;
       }
-      if(trans>0){trans-=dt;if(trans<=0){if(done>=GOAL){hudUpdate();return end()}nextTask()}return}
       timeLeft-=dt;
       if(timeLeft<=0){timeLeft=0;hudUpdate();return end()}
       spawnT-=dt;
-      if(spawnT<=0){spawn();spawnT=Math.max(0.7,1.05-done*0.04)}
+      if(spawnT<=0){spawn();spawnT=Math.max(0.8,1.15-done*0.04)}
       const l=ag.x-ag.w/2,r=ag.x+ag.w/2;
       for(let i=items.length-1;i>=0;i--){
         const it=items[i];it.y+=it.vy*dt;
@@ -395,9 +425,8 @@ function play(){
       g.textAlign="center";g.textBaseline="middle";g.font="bold 15px 'Space Mono', monospace";
       for(const it of items){
         g.fillStyle="#000";rr(it.x+3,it.y+3,it.w,it.h,4);g.fill();
-        if(it.need){g.fillStyle="#7bd88f";rr(it.x,it.y,it.w,it.h,4);g.fill();g.fillStyle="#0c1710"}
-        else{g.fillStyle="#3b2323";rr(it.x,it.y,it.w,it.h,4);g.fill();g.strokeStyle="#e57373";g.lineWidth=2;g.stroke();g.fillStyle="#f0ebd8"}
-        g.fillText(it.s,it.x+it.w/2,it.y+it.h/2+1);
+        g.fillStyle=hints&&it.need?"#7bd88f":"#f0ebd8";rr(it.x,it.y,it.w,it.h,4);g.fill();
+        g.fillStyle="#16241a";g.fillText(it.s,it.x+it.w/2,it.y+it.h/2+1);
       }
       const ax=ag.x,aw=ag.w,by=AY+4;
       g.fillStyle="#e5c76b";g.fillRect(ax-aw/2,AY-4,aw,6);g.fillRect(ax-aw/2,AY-12,6,10);g.fillRect(ax+aw/2-6,AY-12,6,10);
@@ -413,12 +442,10 @@ function play(){
       for(const o of pops){g.globalAlpha=Math.max(0,Math.min(1,o.t*1.5));g.fillStyle="#000";g.fillText(o.s,o.x+2,o.y+2);g.fillStyle=o.c;g.fillText(o.s,o.x,o.y)}
       g.globalAlpha=1;
       if(ready>0){
-        g.fillStyle="rgba(8,17,11,.75)";g.fillRect(0,0,W,H);
-        g.fillStyle="#8fa795";g.font="bold 15px monospace";g.fillText("YOUR TASK",W/2,H/2-70);
-        g.fillStyle="#f0ebd8";g.font="bold 22px monospace";g.fillText(cur?cur.t:"",W/2,H/2-36);
-        g.fillStyle="#e5c76b";g.font="bold 54px monospace";g.fillText(String(Math.ceil(ready)),W/2,H/2+30);
-      }else if(banner>0){
-        g.globalAlpha=Math.min(1,banner*3);g.font="bold 30px monospace";g.fillStyle="#000";g.fillText("AGENT RAN!",W/2+3,H/2-30+3);g.fillStyle="#7bd88f";g.fillText("AGENT RAN!",W/2,H/2-30);g.globalAlpha=1;
+        g.fillStyle="rgba(8,17,11,.78)";g.fillRect(0,0,W,H);
+        g.fillStyle="#8fa795";g.font="bold 15px monospace";g.fillText(cur?cur.mod.toUpperCase():"",W/2,H/2-80);
+        g.fillStyle="#f0ebd8";g.font="bold 22px monospace";g.fillText(cur?cur.t:"",W/2,H/2-44);
+        g.fillStyle="#e5c76b";g.font="bold 54px monospace";g.fillText(String(Math.ceil(ready)),W/2,H/2+26);
       }
     }
     const toX=e=>{const r=cv.getBoundingClientRect();return (e.clientX-r.left)*W/r.width};
